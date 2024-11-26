@@ -1,101 +1,147 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from 'react';
+import { FileUploadZone } from '@/components/FileUploadZone';
+import { ConverterCard } from '@/components/ConverterCard';
+import { ConversionProgress } from '@/components/ConversionProgress';
+import { FileConverter } from '@/types/converter';
+import { textCaseConverter } from '@/lib/converters/textCaseConverter';
+import { newConverter } from '@/lib/converters/newConverter';
+import { markdownConverter } from '@/lib/converters/markdownConverter';
+
+const availableConverters: FileConverter[] = [
+  textCaseConverter,
+  markdownConverter,
+  newConverter,
+];
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedConverter, setSelectedConverter] = useState<FileConverter | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<'converting' | 'success' | 'error'>('converting');
+  const [error, setError] = useState<string | undefined>();
+  const [converting, setConverting] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+    setProgress(0);
+    setError(undefined);
+  };
+
+  const handleConverterSelect = (converter: FileConverter) => {
+    setSelectedConverter(converter);
+    setError(undefined);
+  };
+
+  const handleConvert = async () => {
+    if (!selectedFile || !selectedConverter) return;
+
+    try {
+      setConverting(true);
+      setStatus('converting');
+      setProgress(10);
+
+      // Conversion process
+      const convertedFile = await selectedConverter.convert(selectedFile);
+      setProgress(90);
+
+      // Download process
+      const url = URL.createObjectURL(convertedFile);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = convertedFile.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setProgress(100);
+      setStatus('success');
+      setTimeout(() => {
+        setProgress(0);
+        setConverting(false);
+        setSelectedFile(null);
+        setSelectedConverter(null);
+        setError(undefined);
+        setStatus('converting');
+      }, 1000);
+    } catch (error) {
+      console.error('Conversion failed:', error);
+      setStatus('error');
+      setError('Conversion failed. Please check your file and try again.');
+      setConverting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="mx-auto max-w-4xl px-4">
+        <h1 className="mb-8 text-center text-3xl font-bold text-gray-900">
+          File Conversion Tool
+        </h1>
+
+        <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">1. Select Conversion Method</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {availableConverters.map((converter) => (
+              <ConverterCard
+                key={converter.id}
+                converter={converter}
+                onSelect={() => handleConverterSelect(converter)}
+                isSelected={selectedConverter?.id === converter.id}
+              />
+            ))}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">2. Upload File</h2>
+          <FileUploadZone
+            onFileSelect={handleFileSelect}
+            acceptedTypes={selectedConverter?.acceptedTypes || []}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          {selectedFile && (
+            <div className="mt-4">
+              <div className="text-sm font-medium text-gray-700">
+                Selected file: <span className="font-semibold text-blue-700">{selectedFile.name}</span>
+              </div>
+              {!selectedConverter && (
+                <p className="mt-2 text-sm font-medium text-red-600">
+                  Please select a conversion method
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {selectedFile && (
+          <div className="mb-8 rounded-xl bg-white p-6 shadow-md">
+            <h2 className="mb-4 text-xl font-semibold text-gray-900">3. Convert</h2>
+            {converting ? (
+              <ConversionProgress
+                progress={progress}
+                fileName={selectedFile.name}
+                status={status}
+                error={error}
+              />
+            ) : (
+              <button
+                onClick={handleConvert}
+                disabled={!selectedConverter}
+                className={`w-full py-3 rounded-lg font-semibold
+                  ${
+                    selectedConverter
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                  }`}
+              >
+                Start Conversion
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
