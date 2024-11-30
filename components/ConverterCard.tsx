@@ -21,7 +21,12 @@ export const ConverterCard: React.FC<ConverterCardProps> = ({
       <h3 className="mb-2 font-semibold text-gray-900">{converter.name}</h3>
       <p className="mb-2 text-sm text-gray-700">{converter.description}</p>
       <p className="text-sm text-gray-600">
-        Accepts: {converter.acceptedTypes.join(', ')}
+        Accepts: {converter.acceptedTypes.map((type) => 
+        <>
+          <span className="font-semibold text-blue-700">{type}</span>
+          {type !== converter.acceptedTypes[converter.acceptedTypes.length - 1] && ', '}
+        </>
+        )}
       </p>
     </div>
   );

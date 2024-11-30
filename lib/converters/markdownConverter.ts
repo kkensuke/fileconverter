@@ -79,7 +79,7 @@ export const markdownConverter: FileConverter = {
   id: 'markdown-to-html',
   name: 'Markdown to HTML Converter',
   description: 'Converts Markdown files to formatted HTML documents',
-  acceptedTypes: ['.md', '.txt'],
+  acceptedTypes: ['.md'],
   convert: async (file: File) => {
     try {
       const markdown = await file.text();
@@ -134,7 +134,7 @@ ${MarkdownParser.parse(markdown)}
 </html>`;
 
       // Create a new file with HTML content
-      const outputFilename = file.name.replace(/\.(md|markdown|txt)$/, '.html');
+      const outputFilename = file.name.replace(/\.(md|txt)$/, '.html');
       return new File([html], outputFilename, {
         type: 'text/html'
       });

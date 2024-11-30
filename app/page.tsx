@@ -5,15 +5,15 @@ import { FileUploadZone } from '@/components/FileUploadZone';
 import { ConverterCard } from '@/components/ConverterCard';
 import { ConversionProgress } from '@/components/ConversionProgress';
 import { FileConverter } from '@/types/converter';
-import { textCaseConverter } from '@/lib/converters/textCaseConverter';
-import { newConverter } from '@/lib/converters/newConverter';
+import { lowerCaseConverter } from '@/lib/converters/lowerCaseConverter';
+import { upperCaseConverter } from '@/lib/converters/upperCaseConverter';
 import { markdownConverter } from '@/lib/converters/markdownConverter';
 
 const availableConverters: FileConverter[] = [
-  textCaseConverter,
+  lowerCaseConverter,
+  upperCaseConverter,
   markdownConverter,
-  newConverter,
-];
+]; 
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
